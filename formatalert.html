@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+  <head>
+      <style></style>
+      <script src="parser.js"></script>
+      <title>Format Power Outage Alerts from Facilities</title>
+  </head>
+  <body>
+    <h1>Format an alert</h1>
+    <p>Paste the raw text from a Facilities notification PDF in the box below.
+    <form>
+      Copy page source here:
+      <textarea id="in"></textarea><br>
+      <button type="button" onclick="parse('in','out')">Go!</button>
+    </form>
+    <p><div id="out">Formatted alert will appear here...</div>
+    </body>
+</html>
