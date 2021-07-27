@@ -1,19 +1,6 @@
-const service = "Network and Telephones";
-const impact = "Unavailable";
-const reason = "During Power Outage";
-const OCCUPANTS_OF = "Occupants of";
-const SCHEDULED_DATE = "SCHEDULED DATE";
-
-const WHAT = 0;
-const WHEN = 1;
-const WHO = 2;
-const BODY = 3;
-
-const cursorLimit = 10000;
+let malformed = false;
 
 let input = "";
-
-let cursor = -1;
 
 let info = {
 	"what" : "",
@@ -22,6 +9,9 @@ let info = {
 	"body" : "",
 }
 
+let cursor = -1;
+
+/* Utilities */
 function $(id) {
     return document.getElementById(id);
 }
@@ -30,39 +20,24 @@ String.prototype.splice = function(start, newSubStr) {
         return this.slice(0, start) + newSubStr + this.slice(start, this.length);
     }
 
-function positionCursor(use) {
-	cursor = -1;
-
-	if (use == WHAT) {
-		cursor = input.indexOf(OCCUPANTS_OF);
-
-		if (cursor != -1) {
-			cursor += OCCUPANTS_OF.length;
-		}
-
-	} else if (use == WHEN) {
-		cursor = input.indexOf(SCHEDULED_DATE);
-	
-		if (cursor != -1) {
-			for (let i = 0; !limitReached(cursor) && i < 4; i++) {
-				cursor = newLine(cursor);
-			}	
-		}
-	} else if (use == WHO) {
-		cursor = input.indexOf("Occupants of ");
-	} else if (use == BODY) {
-		cursor = input.indexOf("CURRENT DATE");
-	
-		if (cursor != -1) {
-			for (let i = 0; i < 10; i++) {
-				cursor = newLine();	
+/* Reviews already parsed content for additional flagged content that should be stripped)
+	string - string to be reviewed
+	type - key of property in FLAGS object to check against
+*/
+function checkFlagsAndMaybeStrip(string, type) {
+	if (type in FLAGS) {
+		for (flag in FLAGS[type]) {
+			if (string.indexOf(flag) !== -1) {
+				string = string.substr(0, string.indexOf(flag));
 			}
 		}
 	}
-
-	return cursor;
+	return string;
 }
 
+/*
+	Returns all information between the cursor and the next newline character
+*/
 function copyLineAtCursor() {
 	let line = "";
 
@@ -75,90 +50,91 @@ function copyLineAtCursor() {
 	return line;
 }
 
-function limitReached() {
-	if (cursor > input.length) {
-		return true;
+/* Returns the earliest instance of a marker in the text (when multiple markers are found)
+	idxArray - array of indeces to scan; return value will be lowest of these
+*/
+function findEarliestInstance(idxArray) {
+	let earliestIdx = CURSOR_LIMIT;
+
+	for (idx of idxArray) {
+		if (idx !== -1 && idx < earliestIdx) {
+			earliestIdx = idx;
+		}
 	}
 
-	return false;
+	return earliestIdx;
 }
 
-function newLine() {
-	for (cursor; !limitReached(cursor) && input.charAt(cursor) != '\n'; cursor++) {
+/* Returns a formatted version of the body with the correct primary/secondary (and sometimes additional) contact organization 
+	raw - the unformatted body text
+*/
+function formatBody(raw) {
+	let formatted = "";
+
+	if (raw.indexOf(PRIMARY_CONTACT) !== -1) {
+		formatted = raw.substr(0, raw.indexOf(PRIMARY_CONTACT));
 	}
 
-	return ++cursor;
-}
+	let formatCursor = raw.indexOf(SECONDARY_CONTACT) + SECONDARY_CONTACT.length;
 
-function notEndOfLine(text, cursor) {
-	if (text.charAt(cursor) == '\n') {
-		return false;
-	}
-	
-	return true;
-}
-
-function parse(i, o) {
-	
-	getInput(i);
-
-	getWhat();
-
-	getWhen();
-
-	getWho();
-
-	getBody();
-
-	outputFormattedAlert(o);
-}
-
-function getInput(e) {
-	input = $(e).value;
-}
-
-function getWhat() {
-	cursor = positionCursor(WHAT);
-	
-	let loc = "";
-	
-	if (cursor != -1) {
-		loc = copyLineAtCursor();
-	
-		info.what = loc + " " + service + " " + impact + " " + reason;
+	if (raw.indexOf(ADDITIONAL_CONTACT) !== -1) {
+		formatCursor = raw.indexOf(ADDITIONAL_CONTACT) + ADDITIONAL_CONTACT.length;
 	}
 
-}
-
-function getWhen() {
-	cursor = positionCursor(WHEN);
-	
-	let date = time = "";
-
-	if (cursor != -1) {
-		date = copyLineAtCursor();
-	
-		cursor++;
-	
-		time = copyLineAtCursor();
-	
-		info.when = date + " " + time;
-	}
-}
-
-function getWho() {
-	cursor = positionCursor(WHO);
-	
-	let who = "";
-
-	if (cursor != -1) {
-		who = copyLineAtCursor();
+	if (formatCursor !== -1) {
+		let contact = [];
 		
-		info.who = who;
+		if (raw.indexOf(PLEASE_NOTIFY) !== -1) {
+			while (formatCursor < raw.indexOf(PLEASE_NOTIFY)) {
+				let entry = "";
+				while (raw.charAt(formatCursor) !== '\n') {
+					entry += raw.charAt(formatCursor);
+					formatCursor++;
+				}
+
+				contact.push(entry);
+				formatCursor++;
+			}
+			
+			formatted += 
+					"<p>Primary Contact:<br>" 
+					+ contact[0] + "<br>" 
+					+ contact[1] + "<p>" 
+					+ "Secondary Contact:<br>" 
+					+ contact[2] + "<p>";
+					
+			if (raw.indexOf(ADDITIONAL_CONTACT) !== -1) {
+				formatted += "<br>Additional Contact:<br>" + contact[3] + "<p>";
+
+	
+			}
+		formatted += raw.substr(raw.indexOf(PLEASE_NOTIFY),raw.length);
+		}
 	}
 
+	return formatted;
 }
 
+/* Returns a formatted version of the time that conforms to UBIT style standards (a.m. instead of am etc.)
+	time - the unformatted time
+*/
+function formatTime(time) {
+	if (time.indexOf("am") !== -1) {
+		time = time.replace("am","a.m.");
+	}
+
+	if (time.indexOf("pm") !== -1) {
+		time = time.replace("pm","p.m.");
+	}
+
+	if (time.indexOf("EDT") === -1 && time.indexOf("ET") === -1 && time.indexOf("EST") === -1) {
+		time = time + " " + getDST();
+	}
+
+	return time;
+}
+
+/* Locates and isolates the body of the alert */
 function getBody() {
 	cursor = positionCursor(BODY);
 
@@ -176,55 +152,239 @@ function getBody() {
 	
 }
 
-function formatBody(raw) {
-	let formatCursor = raw.indexOf("PRIMARY CONTACT");
-	
-	let formatted = "";
-	
-	if (formatCursor != -1) {
-		formatted = raw.substr(0, formatCursor);
+/* Returns either EST or EDT, depending on which is correct for the time of year, to append to the time */
+function getDST() {
+	let dstString = "";
+	let currentDate = new Date();
+	let month = currentDate.getMonth();
 
-		for (let i = 0; i < 4; i++) {
-			while (formatCursor < raw.length && raw.charAt(formatCursor) != '\n') {
-				formatCursor++;
+	if (month < 2 || month > 10) {
+		dstString = "EST";
+	} else if (month === 2) {
+		if (currentDate.getDate() > 14) {
+			dstString = "EDT";
+		} else {
+			let lastSunday = currentDate.getDate() - currentDate.getDay();
+			if (lastSunday < 0) {
+				dstString = "EST";
+			} else if (lastSunday > 6) {
+				dstString = "EDT";
+			} else {
+				dstString = "EST";
 			}
-			
-			formatCursor++;
 		}
-
-		let contact = ["","","",""];
-
-		for (let i = 0; i < contact.length; i++) {
-			for (formatCursor; formatCursor < raw.length && raw.charAt(formatCursor) != '\n'; formatCursor++) {
-				contact[i] += raw.charAt(formatCursor);	
+	} else if (month == 10) {
+		if (currentDate.getDay() > 7) {
+			dstString = "EST";
+		} else {
+			let lastSunday = currentDate.getDate() - currentDate.getDay();
+			if (lastSunday < 0) {
+				dstString = "EDT";
+			} else {
+				dstString = "EST";
 			}
-		
-			formatCursor++;
 		}
-
-		formatted += 
-				"<p>Primary Contact:<br>" 
-				+ contact[0] + "<br>" 
-				+ contact[1] + "<p>" 
-				+ "Secondary Contact:<br>" 
-				+ contact[2] + "<br>" 
-				+ contact[3] + "<p>";
-
-		formatted += raw.substr(raw.indexOf(contact[3]) + contact[3].length,raw.length);
-
-		if (formatted.indexOf("University Facilities") != -1) {
-			formatted = formatted.substr(0, formatted.indexOf("University Facilities"));
-		}
-	
+	} else {
+		dstString = "EDT";
 	}
-
-	return formatted;
+	
+	return dstString;
 }
 
+/* Retrieves the pasted text from the HTML textbox 
+	e - ID of the textbox element containing the pasted text 
+*/
+function getInput(e) {
+	input = $(e).value;
+
+	if (input.indexOf(OCCUPANTS_OF) == -1) {
+		malformed = true;
+	}
+}
+
+/* Locates and isolates the 'What' information in the alert */
+function getWhat() {
+	cursor = positionCursor(WHAT);
+	
+	let loc = "";
+	
+	if (cursor != -1) {
+		loc = copyLineAtCursor();
+
+		loc = checkFlagsAndMaybeStrip(loc, "location");
+
+		info.what = loc + " " + SERVICE + " " + IMPACT + " " + REASON;
+	}
+
+}
+
+/* Locates and isolates the 'When' information in the alert */
+function getWhen() {
+	cursor = positionCursor(DATE);
+	
+	let date = time = "";
+
+	if (cursor != -1) {
+		date = copyLineAtCursor();
+
+		cursor = positionCursor(TIME);
+	
+		time = copyLineAtCursor();
+
+		time = formatTime(time);
+
+		info.when = date + ", " + time;
+	}
+}
+
+/* Locates and isolates the 'Who' information of the alert */
+function getWho() {
+	cursor = positionCursor(WHO);
+	
+	let who = "";
+
+	if (cursor != -1) {
+		who = copyLineAtCursor();
+		
+		info.who = who;
+	}
+
+}
+
+
+/* Returns TRUE if the cursor has surpassed the CURSOR_LIMIT value, FALSE otherwise */ 
+function limitReached() {
+	if (cursor > input.length) {
+		return true;
+	}
+
+	return false;
+}
+
+/* Returns the index of the next line (i.e., after the next newline character) */
+function nextLine() {
+	for (cursor; !limitReached(cursor) && input.charAt(cursor) != '\n'; cursor++) {
+	}
+
+	return ++cursor;
+}
+
+/* Puts parsed info into an alert format and prints to screen */
 function outputFormattedAlert(e) {
 	$(e).innerHTML = 
 		"WHAT: " + info.what + "<p>" 
 		+ "WHEN: " + info.when + "<p>" 
 		+ "WHO: " + info.who + "<p>" 
 		+ info.body;
+}
+
+/* "Main" function that receives input, does some checks against it and then retrieves the relevant info. */
+function parse(i, o) {
+
+	if (CURSOR_LIMIT === null) {
+		$(o).innerHTML = "Parser error: constants not available. Is your consts.js file present?";
+	} else {
+
+		getInput(i);
+
+		if (!malformed) {
+	
+			stripHeadersAndFooters();
+
+			getWhat();
+
+			getWhen();
+
+			getWho();
+
+			getBody();
+
+			outputFormattedAlert(o);
+		} else {
+			$(o).innerHTML = "This alert is malformed, and cannot be parsed.";
+		}
+	}
+}
+
+/* Position cursor at beginning of desired content
+	use - constant integer inticating which content to locate (could be WHAT, WHEN, DATE, TIME, WHO or BODY)
+*/
+function positionCursor(use) {
+	if (use == WHAT) {
+		cursor = input.indexOf(OCCUPANTS_OF);
+
+		if (cursor != -1) {
+			cursor += OCCUPANTS_OF.length;
+		}
+
+	} else if (use == DATE) {
+		
+		let dateIdxArray = [];
+		let numberMarkersFound = 0;
+
+		for (marker of MARKERS.date) {
+			dateIdxArray.push(input.indexOf(marker));
+			if (input.indexOf(marker) !== -1) {
+				numberMarkersFound++;
+			}
+		}
+
+		if (numberMarkersFound < 1) {
+			cursor = -1;
+		} else if (numberMarkersFound > 1) {
+			cursor = findEarliestInstance(dateIdxArray);
+		} else {
+			for (idx of dateIdxArray) {
+				if (idx !== -1) {
+					cursor = idx;
+				}
+			}
+		}
+	
+	} else if (use == TIME) {
+		
+		let timeIdxArray = [];
+		let numberMarkersFound = 0;
+
+		for (marker of MARKERS.time) {
+			timeIdxArray.push(input.indexOf(marker));
+			if (input.indexOf(marker) !== -1) {
+				numberMarkersFound++;
+			}
+		}
+		
+		if (numberMarkersFound < 1) {
+			cursor = -1;
+		} else if (numberMarkersFound > 1) {
+			cursor = findEarliestInstance(timeIdxArray);
+		} else {
+			for (idx of timeIdxArray) {
+				if (idx !== -1) {
+					cursor = idx;
+				}
+			}
+		}
+
+	} else if (use == WHO) {
+		cursor = input.indexOf("Occupants of ");
+	
+	} else if (use == BODY) {
+		positionCursor(TIME);
+	
+		if (cursor != -1) {
+			nextLine();
+		}
+	}
+
+	return cursor;
+}
+
+/* Removes extraneous information before and after important details in the input */
+function stripHeadersAndFooters() {
+	input = input.substr(input.indexOf(OCCUPANTS_OF),input.length);
+
+	if (input.indexOf(UNIVERSITY_FACILITIES) != -1) {
+		input = input.substr(0, input.indexOf(UNIVERSITY_FACILITIES));
+	}
+
 }
