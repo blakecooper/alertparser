@@ -1,19 +1,53 @@
 <!DOCTYPE html>
-<html>
-  <head>
-      <style></style>
-      <script src="consts.js"></script>
-      <script src="parser.js"></script>
-      <title>Format Power Outage Alerts from Facilities</title>
-  </head>
-  <body>
-    <h1>Format an alert</h1>
-    <p>Paste the raw text from a Facilities notification PDF in the box below.
-    <form>
-      Copy page source here:
-      <textarea id="in"></textarea><br>
-      <button type="button" onclick="parse('in','out')">Go!</button>
-    </form>
-    <p><div id="out">Formatted alert will appear here...</div>
-    </body>
+<html lang="en">
+<head>
+  <title>Convert UB Facilities' Notices to UBIT Alerts</title>
+  <link rel="shortcut icon" type="image/jpg" href="../assets/favicon.ico"/>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script> 
+  <script src="consts.js"></script>
+  <script src="parser.js"></script>
+</head>
+<body>
+<div class="jumbotron jumbotron-fluid" id="banner">
+  <div class="container">
+ 	<img src="../assets/lockup.png" id="lockup"></img> 
+  </div>
+</div>
+<div class="container">
+    <h1>Generate UBIT Alerts from UB Facilities notices</h1>
+    <p>UBIT is responsible for posting UBIT Alerts when informed by UB Facilities that power outages will disrupt network and telephone service. Use this utility to convert the copied text from a UB Facilities notice (typically a PDF attached to an email) into a standard UBIT Alert format.</p>
+	<div class="row">
+  		<div class="col-sm-6">
+			<div class="form-group">
+  				<label for="in">
+     				Paste <b>UB Facilities</b> text here:
+  				</label>
+  				<textarea class="form-control" rows="5" id="in"></textarea>
+      			<p id="buttonPara">
+					<button type="button" onclick="parse('in','out')">Convert</button>
+				</p>
+			</div>
+  		</div>
+  		<div class="col-sm-6">
+  			<label for="out">
+    			Formatted <b>UBIT Alert</b> will appear here:
+			</label>
+			<div id="out">
+			</div>	
+		</div>
+	</div>
+</div>
+
+<footer class="page-footer font-small">
+	<div class="footer-copyright text-center py-3">Created by <a href="mailto:blakecoo@buffalo.edu" id="email">Blake Cooper</a>. Updated 8/2/2021.
+  	</div>
+</footer>
+
+</body>
 </html>
