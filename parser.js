@@ -120,11 +120,11 @@ function formatBody(raw) {
 */
 function formatTime(time) {
 	if (time.indexOf("am") !== -1) {
-		time = time.replace("am","a.m.");
+		time = time.replaceAll("am","a.m.");
 	}
 
 	if (time.indexOf("pm") !== -1) {
-		time = time.replace("pm","p.m.");
+		time = time.replaceAll("pm","p.m.");
 	}
 
 	if (time.indexOf("EDT") === -1 && time.indexOf("ET") === -1 && time.indexOf("EST") === -1) {
