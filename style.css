@@ -10,12 +10,15 @@
 	color: white;
 }
 
-#out {
-	background-color: #e4e4e4;
+#in {
 	height: 100%;
 }
 
-#buttonPara {
+#out {
+	background-color: #e4e4e4;
+}
+
+.buttonPara {
 	float: right;
 }
 
