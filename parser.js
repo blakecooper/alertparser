@@ -36,6 +36,24 @@ function checkFlagsAndMaybeStrip(string, type) {
 }
 
 /*
+	Copies text in formatted alert window, if present
+		e - html element where output text is printed
+*/
+function copy(e, button) {
+	const textToCopy = $(e);
+
+	textToCopy.select();
+	textToCopy.setSelectionRange(0, CURSOR_LIMIT);
+
+	document.execCommand("Copy");
+
+	$(button).innerHTML = "Copied!";
+	$(button).disabled = true;
+
+
+}
+
+/*
 	Returns all information between the cursor and the next newline character
 */
 function copyLineAtCursor() {
@@ -97,14 +115,14 @@ function formatBody(raw) {
 			}
 			
 			formatted += 
-					"<p>Primary Contact:<br>" 
-					+ contact[0] + "<br>" 
-					+ contact[1] + "<p>" 
-					+ "Secondary Contact:<br>" 
-					+ contact[2] + "<p>";
+					"\nPrimary Contact:\n" 
+					+ contact[0] + "\n" 
+					+ contact[1] + "\n\n" 
+					+ "Secondary Contact:\n" 
+					+ contact[2] + "\n\n";
 					
 			if (raw.indexOf(ADDITIONAL_CONTACT) !== -1) {
-				formatted += "<br>Additional Contact:<br>" + contact[3] + "<p>";
+				formatted += "\nAdditional Contact:\n" + contact[3] + "\n\n";
 
 	
 			}
@@ -270,16 +288,18 @@ function nextLine() {
 }
 
 /* Puts parsed info into an alert format and prints to screen */
-function outputFormattedAlert(e) {
-	$(e).innerHTML = 
-		"WHAT: " + info.what + "<p>" 
-		+ "WHEN: " + info.when + "<p>" 
-		+ "WHO: " + info.who + "<p>" 
+function outputFormattedAlert(e, button) {
+	$(e).value = 
+		"WHAT: " + info.what + "\n\n" 
+		+ "WHEN: " + info.when + "\n\n" 
+		+ "WHO: " + info.who + "\n\n" 
 		+ info.body;
+
+	$(button).disabled = false;
 }
 
 /* "Main" function that receives input, does some checks against it and then retrieves the relevant info. */
-function parse(i, o) {
+function parse(i, o, button) {
 
 	if (CURSOR_LIMIT === null) {
 		$(o).innerHTML = "Parser error: constants not available. Is your consts.js file present?";
@@ -299,7 +319,7 @@ function parse(i, o) {
 
 			getBody();
 
-			outputFormattedAlert(o);
+			outputFormattedAlert(o, button);
 		} else {
 			$(o).innerHTML = "This alert is malformed, and cannot be parsed.";
 		}
