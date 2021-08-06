@@ -68,6 +68,26 @@ function copyLineAtCursor() {
 	return line;
 }
 
+/* Checks if the string ends in a phone number (i.e., are the last four characters numbers?).
+	str - string to check
+*/
+function endsInPhoneNumber(str) {
+	const lengthToCheck = 4;
+	let cursor = str.length - 1;
+
+	for (let i = 0; i < lengthToCheck; i++) {
+		console.log(str.charAt(cursor));
+		if (str.charAt(cursor) >= '0' && str.charAt(cursor) <= '9') {
+		} else {
+			return false;
+		};
+
+		cursor--;
+	}
+
+	return true;
+}
+
 /* Returns the earliest instance of a marker in the text (when multiple markers are found)
 	idxArray - array of indeces to scan; return value will be lowest of these
 */
@@ -116,10 +136,19 @@ function formatBody(raw) {
 			
 			formatted += 
 					"\nPrimary Contact:\n" 
-					+ contact[0] + "\n" 
-					+ contact[1] + "\n\n" 
-					+ "Secondary Contact:\n" 
-					+ contact[2] + "\n\n";
+					+ contact[0] + "\n";
+
+			if (endsInPhoneNumber(contact[0])) {
+					formatted +=
+						"\nSecondary Contact:\n"
+						+ contact[1] + "\n";
+			} else {
+					formatted += 
+						contact[1] + "\n\n" 
+						+ "Secondary Contact:\n";
+			}
+			
+			formatted += contact[2] + "\n\n";
 					
 			if (raw.indexOf(ADDITIONAL_CONTACT) !== -1) {
 				formatted += "\nAdditional Contact:\n" + contact[3] + "\n\n";
