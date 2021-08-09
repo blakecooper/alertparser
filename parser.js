@@ -148,13 +148,18 @@ function formatBody(raw) {
 						+ "Secondary Contact:\n";
 			}
 			
-			formatted += contact[2] + "\n\n";
+			formatted += contact[2] + "\n";
 					
 			if (raw.indexOf(ADDITIONAL_CONTACT) !== -1) {
 				formatted += "\nAdditional Contact:\n" + contact[3] + "\n\n";
-
-	
+			} else {
+				if (contact[3] !== undefined) {
+					formatted += contact[3] + "\n";
+				}
 			}
+
+			formatted += "\n";
+
 		formatted += raw.substr(raw.indexOf(PLEASE_NOTIFY),raw.length);
 		}
 	}
