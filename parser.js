@@ -76,7 +76,6 @@ function endsInPhoneNumber(str) {
 	let cursor = str.length - 1;
 
 	for (let i = 0; i < lengthToCheck; i++) {
-		console.log(str.charAt(cursor));
 		if (str.charAt(cursor) >= '0' && str.charAt(cursor) <= '9') {
 		} else {
 			return false;
@@ -106,11 +105,11 @@ function findEarliestInstance(idxArray) {
 /* Returns a formatted version of the body with the correct primary/secondary (and sometimes additional) contact organization 
 	raw - the unformatted body text
 */
-function formatBody(raw) {
+function formatBodyContacts(raw) {
 	let formatted = "";
 
 	if (raw.indexOf(PRIMARY_CONTACT) !== -1) {
-		formatted = raw.substr(0, raw.indexOf(PRIMARY_CONTACT));
+		formatted = stripLineBreaksAtEnd(formatBodyLineBreaks(raw.substr(0, raw.indexOf(PRIMARY_CONTACT))));
 	}
 
 	let formatCursor = raw.indexOf(SECONDARY_CONTACT) + SECONDARY_CONTACT.length;
@@ -135,7 +134,7 @@ function formatBody(raw) {
 			}
 			
 			formatted += 
-					"\nPrimary Contact:\n" 
+					"\n\nPrimary Contact:\n" 
 					+ contact[0] + "\n";
 
 			if (endsInPhoneNumber(contact[0])) {
@@ -160,7 +159,24 @@ function formatBody(raw) {
 
 			formatted += "\n";
 
-		formatted += raw.substr(raw.indexOf(PLEASE_NOTIFY),raw.length);
+			formatted += stripLineBreaksAtEnd(formatBodyLineBreaks(raw.substr(raw.indexOf(PLEASE_NOTIFY),raw.length)));
+		}
+	}
+
+	return formatted;
+}
+
+/*	Creates a double line break for new paragraphs in the body (similar to how the notices are formatted).
+		raw - raw text to edit
+*/
+function formatBodyLineBreaks(raw) {
+	let formatted = "";
+
+	for (let formatCursor = 0; formatCursor < raw.length; formatCursor++) {
+		if (raw.charAt(formatCursor) === "\n") {
+			formatted += "\n\n";
+		} else {
+			formatted += raw.charAt(formatCursor);
 		}
 	}
 
@@ -198,7 +214,7 @@ function getBody() {
 		}
 	}
 	
-	body = formatBody(body);
+	body = formatBodyContacts(body);
 
 	info.body = body;
 	
@@ -441,4 +457,21 @@ function stripHeadersAndFooters() {
 		input = input.substr(0, input.indexOf(UNIVERSITY_FACILITIES));
 	}
 
+}
+
+/* Strips any additional line breaks left at the end of a text segment.
+	raw - raw text to be edited
+*/
+function stripLineBreaksAtEnd(raw) {
+
+let formatCursor = raw.length - 1;
+
+	console.log(raw.charAt(formatCursor));
+	while (raw.charAt(formatCursor) === "\n") {
+		formatCursor--;
+	}
+
+	formatCursor++;
+
+	return raw.substr(0,formatCursor);
 }
