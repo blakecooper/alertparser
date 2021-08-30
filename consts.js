@@ -101,5 +101,13 @@ const TIME = 3;
 const WHO = 4;
 const BODY = 5;
 
+/* For readability purposes, a macro representing the first index position of a string */
+const START_OF_STRING = 0;
+
 /* The highest index the cursor can reach (designed to prevent infinite loops) */
 const CURSOR_LIMIT = 10000;
+
+/* Adobe Acrobat uses a completely different format for copied text from PDFs. This helps
+the script identify whether the notice was opened in Acrobat and does certain tasks
+differently, depending. */
+const ACROBAT_MARKER = "University Facilities";
