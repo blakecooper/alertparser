@@ -9,6 +9,8 @@ let info = {
 	"body" : "",
 }
 
+let copiedFromAcrobat = false;
+
 let cursor = -1;
 
 /* Utilities */
@@ -19,6 +21,20 @@ function $(id) {
 String.prototype.splice = function(start, newSubStr) {
         return this.slice(0, start) + newSubStr + this.slice(start, this.length);
     }
+
+/* Uses Unicode code points to check whether a character is upper case
+	char - single character string representing character to check
+*/
+function isUpperCase(char) {
+	console.log("Unicode number of char (checking upper case): " + char.codePointAt(0));
+	console.log("Character is: " + char);
+	if (char.codePointAt(0) > 64 && char.codePointAt(0) < 91) {
+		console.log("That's numberwang!");
+		return true;
+	}
+	
+	return false;
+}
 
 /* Reviews already parsed content for additional flagged content that should be stripped)
 	string - string to be reviewed
@@ -33,6 +49,18 @@ function checkFlagsAndMaybeStrip(string, type) {
 		}
 	}
 	return string;
+}
+
+/* Uses a pre-determined marker (in Consts.js) to determine whether the PDF text was copied
+from acrobat.
+	string - string to be reviewed
+*/
+function checkIfCopiedFromAcrobat(string) {
+	if (string != null && string.indexOf(ACROBAT_MARKER) == START_OF_STRING) {
+		copiedFromAcrobat = true;
+	} else {
+		console.log("Index of Acrobat_Marker: " + string.indexOf(ACROBAT_MARKER));
+	}
 }
 
 /*
@@ -214,7 +242,11 @@ function getBody() {
 		}
 	}
 	
-	body = formatBodyContacts(body);
+	if (!copiedFromAcrobat) {
+		body = formatBodyContacts(body);
+	} else {
+		body = stripErroneousLineBreaks(body);
+	}
 
 	info.body = body;
 	
@@ -357,6 +389,8 @@ function parse(i, o, button) {
 
 		getInput(i);
 
+		checkIfCopiedFromAcrobat(input);
+
 		if (!malformed) {
 	
 			stripHeadersAndFooters();
@@ -447,6 +481,25 @@ function positionCursor(use) {
 	}
 
 	return cursor;
+}
+
+/* Removes random line breaks (sometimes added when copied from Adobe Acrobat)
+	raw - raw text to be edited
+*/
+function stripErroneousLineBreaks(raw) {
+	let formatCursor = raw.length - 1;
+	let nextChar = null;
+
+	while (formatCursor > -1) {
+		if (nextChar !== null && raw.charAt(formatCursor) == '\n' && !isUpperCase(raw.charAt(nextChar))) {
+			raw = raw.substr(0, formatCursor) + ' ' + raw.substr(nextChar,raw.length);
+		}
+
+		nextChar = formatCursor;
+		formatCursor--;
+	}
+
+	return raw;
 }
 
 /* Removes extraneous information before and after important details in the input */
